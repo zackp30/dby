@@ -1,0 +1,5 @@
+source 'http://rubygems.org'
+gem 'commander'
+gem 'parseconfig'
+gem 'guard'
+gem 'guard-shell'
