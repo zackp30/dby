@@ -1,0 +1,6 @@
+image: promptworks/ruby-2.0.0
+
+script:
+    - gem install bundler
+    - bundle install
+    - rspec
