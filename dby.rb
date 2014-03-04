@@ -3,6 +3,8 @@ require 'rubygems'
 require 'thor'
 require 'yaml'
 require 'parseconfig'
+require 'open-uri'
+require 'colorize'
 require 'commander/import'
 module DBY
 
@@ -59,7 +61,16 @@ zack = http://zackp30.tk/stuff/repos")
       @conf.writeconf
     end
     def update
-      @conf.parse['repos'].each { |f| puts f[1] }
+      @conf.parse['repos'].each do |f| 
+        begin
+          repo = File.new("#{Dir.home}/.dby/pkg.index/#{f[0]}.yml", 'w+')
+          repo.write(open("#{f[1]}/pkgs.yml").read)
+          repo.close
+        rescue
+          puts "#{f[1]} (repo name #{f[0]}) no longer seems to contain a pkgs.yml file.".colorize(:red).underline
+          repo.close
+        end
+      end
     end
 
   end
@@ -78,7 +89,6 @@ zack = http://zackp30.tk/stuff/repos")
     @package = Package.new
     program :version, '0.0.1'
     program :description, 'Personal program management.'
-     
     command :'repo add' do |c|
       c.syntax = 'dby repo add <REPO NAME> <URL>'
       c.summary = 'Adds a new repo with REPO NAME and URL.'
