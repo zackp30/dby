@@ -6,12 +6,16 @@ require 'parseconfig'
 require 'open-uri'
 require 'colorize'
 require 'commander/import'
+require 'yaml'
+require 'terminal-table'
 module DBY
 
   class DBYInit
     # Initialize ALL the things!
-    Dir.mkdir("#{Dir.home}/.dby") if not File.exists?("#{Dir.home}/.dby")
-    Dir.mkdir("#{Dir.home}/.dby/pkg.index") if not File.exists?("#{Dir.home}/.dby/pkg.index")
+    if Dir.exists?("#{Dir.home}/.dby") == false
+      Dir.mkdir("#{Dir.home}/.dby")
+      Dir.mkdir("#{Dir.home}/.dby/pkg.index")
+    end
   end
   class DBYConfig
     # Parse configuration.
@@ -61,19 +65,26 @@ zack = http://zackp30.tk/stuff/repos")
       @conf.writeconf
     end
     def update
-      @conf.parse['repos'].each do |f| 
+      @table = []
+      @conf.parse['repos'].each do |f|
         begin
           repo = File.new("#{Dir.home}/.dby/pkg.index/#{f[0]}.yml", 'w+')
           repo.write(open("#{f[1]}/pkgs.yml").read)
+          le = 0
           repo.close
+          YAML.load(File.read("#{Dir.home}/.dby/pkg.index/#{f[0]}.yml"))['packages'].each { le += 1 }
+          @table << [f[0], le]
         rescue
           puts "#{f[1]} (repo name #{f[0]}) no longer seems to contain a pkgs.yml file.".colorize(:red).underline
           repo.close
         end
       end
+      @table2 =  Terminal::Table.new :headings => ['Repo', 'Packages'], :rows => @table
+      @table2.style = {:border_y => "│", :border_x => "─", :border_i => "+"}
+      puts @table2
     end
-
   end
+
   class Package
 
     def install(name)
