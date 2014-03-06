@@ -1,21 +1,18 @@
 #!/usr/bin/env ruby
-require 'rubygems'
-require 'thor'
-require 'yaml'
-require 'parseconfig'
-require 'open-uri'
-require 'colorize'
-require 'commander/import'
-require 'yaml'
-require 'terminal-table'
+require 'rubygems' # Compatability.
+require 'yaml' # Parsing repo files.
+require 'parseconfig' # Parsing config files.
+require 'open-uri' # Downloading repo files.
+require 'colorize' # Colouring terminal output.
+require 'commander/import' # Command parsing.
+require 'terminal-table' # Clues in the name.
 module DBY
 
   class DBYInit
     # Initialize ALL the things!
-    if Dir.exists?("#{Dir.home}/.dby") == false
-      Dir.mkdir("#{Dir.home}/.dby")
-      Dir.mkdir("#{Dir.home}/.dby/pkg.index")
-    end
+    Dir.mkdir("#{Dir.home}/.dby") if not Dir.exists?("#{Dir.home}/.dby")
+    Dir.mkdir("#{Dir.home}/.dby/pkg.index") if not Dir.exists?("#{Dir.home}/.dby/pkg.index")
+    Dir.mkdir("#{Dir.home}/.dby/pkgs") if not Dir.exists?("#{Dir.home}/.dby/pkgs")
   end
   class DBYConfig
     # Parse configuration.
@@ -24,7 +21,7 @@ module DBY
     end
     def parse
       dbyconfig_exists = true if (File.exists?(@confloc) && File.size(@confloc) != 0)
-      @config = ParseConfig.new(@confloc) if dbyconfig_exists == true
+      @config = ParseConfig.new(@confloc) if dbyconfig_exists
     end
 
     def init_conf
@@ -43,7 +40,7 @@ zack = http://zackp30.tk/stuff/repos")
       parse.validate_config
     end
     class Run_Le_Stuff
-      DBY::DBYConfig.new.init_conf if File.exists?("#{Dir.home}/.dby.conf") == false
+      DBY::DBYConfig.new.init_conf if not File.exists?("#{Dir.home}/.dby.conf")
       DBY::DBYConfig.new.parse
     end
 
@@ -79,17 +76,31 @@ zack = http://zackp30.tk/stuff/repos")
           repo.close
         end
       end
-      @table2 =  Terminal::Table.new :headings => ['Repo', 'Packages'], :rows => @table
-      @table2.style = {:border_y => "│", :border_x => "─", :border_i => "+"}
-      puts @table2
+      begin
+        @table2 =  Terminal::Table.new :headings => ['Repo', 'Packages'], :rows => @table
+        @table2.style = {:border_y => "│", :border_x => "─", :border_i => "+"}
+        puts @table2
+      rescue
+        return
+      end
     end
   end
 
   class Package
 
+    def initialize
+      @conf = DBYConfig.new
+    end
     def install(name)
-      # TODO: Implement this!
-      puts "#{name}"
+      repo_loc = "#{Dir.home}/.dby/pkg.index"
+      @conf.parse['repos'].each do |f|
+        if YAML.load(File.read("#{repo_loc}/#{f[0]}.yml"))['packages'][name]
+          @is_contained_in = f[1]
+        end
+      end
+      le = File.new("#{Dir.home}/.dby/pkgs/#{name}", 'w')
+      le.write(open("#{@is_contained_in}/pkgs/#{name}").read)
+      le.close
     end
 
   end
@@ -105,7 +116,7 @@ zack = http://zackp30.tk/stuff/repos")
       c.summary = 'Adds a new repo with REPO NAME and URL.'
       c.action do |args, options|
         name = args[0] || abort('You did not specify a name.')
-        url = args[1] || abort('Youd did not specify an URL.')
+        url = args[1] || abort('You did not specify an URL.')
         @repo.add(name, url)
       end
     end
